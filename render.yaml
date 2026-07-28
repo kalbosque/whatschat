@@ -1,0 +1,110 @@
+databases:
+  - name: ticketz-db
+    plan: starter
+    databaseName: ticketz
+    user: ticketz
+    region: oregon
+
+services:
+  # ========== REDIS ==========
+  - type: redis
+    name: ticketz-redis
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # ========== BACKEND ==========
+  - type: web
+    name: ticketz-backend
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /backend
+    envVars:
+      - key: FRONTEND_HOST
+        value: ticketz-frontend-xxxx.onrender.com  # SUBSTITUIR pelo URL real do frontend após criação
+      - key: EMAIL_ADDRESS
+        value: jkalbosque@gmail.com
+      - key: TZ
+        value: America/Sao_Paulo
+      - key: BACKEND_PATH
+        value: /backend
+      - key: BACKEND_URL
+        fromService:
+          name: ticketz-backend
+          type: web
+          property: host
+        # Será montada manualmente como: https://<backend-host>/backend
+      - key: FRONTEND_URL
+        value: https://ticketz-frontend-xxxx.onrender.com  # SUBSTITUIR
+      - key: DB_DIALECT
+        value: postgres
+      - key: DB_HOST
+        fromDatabase:
+          name: ticketz-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: ticketz-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: ticketz-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: ticketz-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: ticketz-db
+          property: database
+      - key: DB_TIMEZONE
+        value: "-03:00"
+      - key: REDIS_URI
+        fromService:
+          name: ticketz-redis
+          type: redis
+          property: connectionString
+      - key: REDIS_OPT_LIMITER_MAX
+        value: "1"
+      - key: REDIS_OPT_LIMITER_DURATION
+        value: "3000"
+      - key: USER_LIMIT
+        value: "10000"
+      - key: CONNECTIONS_LIMIT
+        value: "100000"
+      - key: CLOSED_SEND_BY_ME
+        value: "true"
+      - key: VERIFY_TOKEN
+        value: ticketz
+      - key: SOCKET_ADMIN
+        value: "true"
+      - key: PORT
+        value: "3000"
+
+  # ========== FRONTEND ==========
+  - type: web
+    name: ticketz-frontend
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: FRONTEND_HOST
+        value: ticketz-frontend-xxxx.onrender.com  # SUBSTITUIR
+      - key: EMAIL_ADDRESS
+        value: jkalbosque@gmail.com
+      - key: BACKEND_HOST
+        fromService:
+          name: ticketz-backend
+          type: web
+          property: host
+      - key: BACKEND_PATH
+        value: /backend
+      - key: BACKEND_SERVICE
+        value: ticketz-backend
