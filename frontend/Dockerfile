@@ -20,7 +20,7 @@ CMD (echo "{" && while IFS='=' read -r name value; do \
         printf '\t"%s": "%s"\n' "$name" "$value"; \
     done < <(env) | sed '$!s/$/,/' && echo "}")  > /var/www/public/config.json \
     && if [ -n "$BACKEND_SERVICE" ]; then \
-        BACKEND_IP=$(getent hosts $BACKEND_SERVICE | awk '{ print $1 }') \
+        BACKEND_IP=$(getent ahosts $BACKEND_SERVICE | head -n 1 | awk '{ print $1 }') \
         && echo "$BACKEND_IP backend" >> /etc/hosts; \
     fi \
     && nginx -g "daemon off;"
